@@ -15,6 +15,16 @@ spec:
       labels:
         app: couchdb
     spec:
+      initContainers:
+      - name: init-config
+        image: busybox
+        command: ['sh', '-c', 'cat /config/custom.ini >> /opt/couchdb/etc/local.ini']
+        volumeMounts:
+        - mountPath: /config/custom.ini
+          subPath: custom.ini
+          name: couchdb-config
+        - mountPath: /opt/couchdb/etc/local.ini
+          name: couchdb-local-ini
       containers:
       - name: couchdb
         image: couchdb
@@ -23,9 +33,8 @@ spec:
         volumeMounts:
         - mountPath: /opt/couchdb/data
           name: couchdb-data
-        - mountPath: /opt/couchdb/data/docker.ini
-          subPath: docker.ini
-          name: couchdb-config
+        - mountPath: /opt/couchdb/etc/local.ini
+          name: couchdb-local-ini
         env:
         - name: COUCHDB_USER
           valueFrom:
@@ -37,11 +46,6 @@ spec:
             secretKeyRef:
               name: couchdb-secret
               key: password
-        command: ["/bin/sh"]
-        args:
-        - "-c"
-        - |
-          cp /opt/couchdb/data/docker.ini /opt/couchdb/etc/local.d/ && exec /opt/couchdb/bin/couchdb
       volumes:
       - name: couchdb-data
         persistentVolumeClaim:
@@ -49,20 +53,8 @@ spec:
       - name: couchdb-config
         configMap:
           name: couchdb-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: couchdb-service
-  namespace: couchdb
-spec:
-  type: LoadBalancer
-  loadBalancerIP: 172.16.23.35
-  ports:
-    - port: 5984
-      targetPort: 5984
-  selector:
-    app: couchdb
+      - name: couchdb-local-ini
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -70,7 +62,10 @@ metadata:
   name: couchdb-config
   namespace: couchdb
 data:
-  docker.ini: |
+  custom.ini: |
+    [admins]
+    admin = -password-  # Replace with actual password
+
     [couchdb]
     single_node=true
     max_document_size = 50000000
