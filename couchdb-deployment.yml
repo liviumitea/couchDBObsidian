@@ -22,15 +22,14 @@ spec:
           - sh
           - -c
           - |
-            cp /opt/couchdb/etc/local.ini /opt/couchdb/data/local.ini && \
-            cat /config/custom.ini >> /opt/couchdb/data/local.ini && \
-            mv /opt/couchdb/data/local.ini /opt/couchdb/etc/local.ini
+            touch /opt/couchdb/data/local.ini && \
+            cat /config/custom.ini >> /opt/couchdb/data/local.ini
         volumeMounts:
         - mountPath: /config/custom.ini
           subPath: custom.ini
-          name: couchdb-config  # Reference to the custom config volume
+          name: couchdb-config   # Reference to the custom config volume
         - mountPath: /opt/couchdb/data
-          name: couchdb-data    # Reference to writable data volume
+          name: couchdb-data     # Reference to writable data volume
       containers:
       - name: couchdb
         image: couchdb
@@ -38,7 +37,7 @@ spec:
         - containerPort: 5984
         volumeMounts:
         - mountPath: /opt/couchdb/data
-          name: couchdb-data    # Reference to writable data volume
+          name: couchdb-data     # Reference to writable data volume
         env:
         - name: COUCHDB_USER
           valueFrom:
@@ -50,6 +49,8 @@ spec:
             secretKeyRef:
               name: couchdb-secret
               key: password       # Correct key from the secret
+        - name: COUCHDB_EXTRA_CONFIG_FILE
+          value: /opt/couchdb/data/local.ini  # Use the new local.ini file
       volumes:
       - name: couchdb-data
         persistentVolumeClaim:
