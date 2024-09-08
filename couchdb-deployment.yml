@@ -22,10 +22,10 @@ spec:
         volumeMounts:
         - mountPath: /config/custom.ini
           subPath: custom.ini
-          name: couchdb-config
+          name: couchdb-config   # Reference to the config volume
         - mountPath: /opt/couchdb/etc/local.ini
-          subPath: local.ini  # This ensures local.ini is mounted as a file
-          name: couchdb-local-ini
+          subPath: local.ini     # Mounting local.ini as a file
+          name: couchdb-local-ini # Reference to local.ini volume
       containers:
       - name: couchdb
         image: couchdb
@@ -33,12 +33,71 @@ spec:
         - containerPort: 5984
         volumeMounts:
         - mountPath: /opt/couchdb/data
-          name: couchdb-data
+          name: couchdb-data     # Reference to the data volume
         - mountPath: /opt/couchdb/etc/local.ini
-          subPath: local.ini  # Again, ensure local.ini is a file
-          name: couchdb-local-ini
+          subPath: local.ini     # Mount local.ini file
+          name: couchdb-local-ini # Reference to local.ini volume
         env:
         - name: COUCHDB_USER
           valueFrom:
             secretKeyRef:
-              name: couchd
+              name: couchdb-secret
+              key: username       # Correct key from the secret
+        - name: COUCHDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: couchdb-secret
+              key: password       # Correct key from the secret
+      volumes:
+      - name: couchdb-data
+        persistentVolumeClaim:
+          claimName: couchdb-pvc # The PVC for the data volume
+      - name: couchdb-config
+        configMap:
+          name: couchdb-config   # The config map volume for custom.ini
+      - name: couchdb-local-ini
+        emptyDir: {}             # EmptyDir to allow writable local.ini
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-config
+  namespace: couchdb
+data:
+  custom.ini: |
+    [admins]
+    admin = 'password'  # Replace with actual password
+
+    [couchdb]
+    single_node=true
+    max_document_size = 50000000
+
+    [chttpd]
+    require_valid_user = true
+    max_http_request_size = 4294967296
+    enable_cors = true
+
+    [chttpd_auth]
+    require_valid_user = true
+    authentication_redirect = /_utils/session.html
+
+    [httpd]
+    WWW-Authenticate = Basic realm="couchdb"
+    bind_address = 0.0.0.0
+
+    [cors]
+    origins = app://obsidian.md, capacitor://localhost, http://localhost
+    credentials = true
+    headers = accept, authorization, content-type, origin, referer
+    methods = GET,PUT,POST,HEAD,DELETE
+    max_age = 3600
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: couchdb-secret
+  namespace: couchdb
+type: Opaque
+data:
+  username: YWRtaW4=  # base64 for 'admin'
+  password: cGFzc3dvcmQ=  # base64 for 'password'
