@@ -18,14 +18,19 @@ spec:
       initContainers:
       - name: init-config
         image: busybox
-        command: ['sh', '-c', 'cat /config/custom.ini >> /opt/couchdb/etc/local.ini']
+        command:
+          - sh
+          - -c
+          - |
+            cp /opt/couchdb/etc/local.ini /opt/couchdb/data/local.ini && \
+            cat /config/custom.ini >> /opt/couchdb/data/local.ini && \
+            mv /opt/couchdb/data/local.ini /opt/couchdb/etc/local.ini
         volumeMounts:
         - mountPath: /config/custom.ini
           subPath: custom.ini
-          name: couchdb-config   # Reference to the config volume
-        - mountPath: /opt/couchdb/etc/local.ini
-          subPath: local.ini     # Mounting local.ini as a file
-          name: couchdb-local-ini # Reference to local.ini volume
+          name: couchdb-config  # Reference to the custom config volume
+        - mountPath: /opt/couchdb/data
+          name: couchdb-data    # Reference to writable data volume
       containers:
       - name: couchdb
         image: couchdb
@@ -33,10 +38,7 @@ spec:
         - containerPort: 5984
         volumeMounts:
         - mountPath: /opt/couchdb/data
-          name: couchdb-data     # Reference to the data volume
-        - mountPath: /opt/couchdb/etc/local.ini
-          subPath: local.ini     # Mount local.ini file
-          name: couchdb-local-ini # Reference to local.ini volume
+          name: couchdb-data    # Reference to writable data volume
         env:
         - name: COUCHDB_USER
           valueFrom:
@@ -55,8 +57,6 @@ spec:
       - name: couchdb-config
         configMap:
           name: couchdb-config   # The config map volume for custom.ini
-      - name: couchdb-local-ini
-        emptyDir: {}             # EmptyDir to allow writable local.ini
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -66,7 +66,7 @@ metadata:
 data:
   custom.ini: |
     [admins]
-    admin = 'password'  # Replace with actual password
+    admin = -password-
 
     [couchdb]
     single_node=true
