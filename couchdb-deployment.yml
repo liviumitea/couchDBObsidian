@@ -21,7 +21,7 @@ spec:
         ports:
         - containerPort: 5984
         volumeMounts:
-        - mountPath: /opt/couchdb
+        - mountPath: /opt/couchdb/data
           name: couchdb-data
         env:
         - name: COUCHDB_USER
