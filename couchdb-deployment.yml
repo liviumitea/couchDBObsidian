@@ -37,8 +37,11 @@ spec:
             secretKeyRef:
               name: couchdb-secret
               key: password
-        - name: COUCHDB_EXTRA_CONFIG_FILE
-          value: /opt/couchdb/data/docker.ini  # Pointing CouchDB to use custom config
+        command: ["/bin/sh"]
+        args:
+        - "-c"
+        - |
+          cp /opt/couchdb/data/docker.ini /opt/couchdb/etc/local.d/ && exec /opt/couchdb/bin/couchdb
       volumes:
       - name: couchdb-data
         persistentVolumeClaim:
