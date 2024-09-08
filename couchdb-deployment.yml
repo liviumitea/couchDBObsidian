@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: couchdbObsidian
+  namespace: couchdb
+  labels:
+    app: couchdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: couchdb
+  template:
+    metadata:
+      labels:
+        app: couchdb
+    spec:
+      containers:
+      - name: couchdb
+        image: couchdb:3.2
+        ports:
+        - containerPort: 5984
+        volumeMounts:
+        - mountPath: /opt/couchdb/data
+          name: couchdb-data
+        env:
+        - name: COUCHDB_USER
+          valueFrom:
+            secretKeyRef:
+              name: couchdb-secret
+              key: username
+        - name: COUCHDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: couchdb-secret
+              key: password
+      volumes:
+      - name: couchdb-data
+        persistentVolumeClaim:
+          claimName: couchdb-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb-service
+spec:
+  type: ClusterIP
+  clusterIP: 172.17.23.35
+  ports:
+    - port: 5984
+      targetPort: 5984
+  selector:
+    app: couchdb
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: couchdb-secret
+type: Opaque
+data:
+  username: YWRtaW4=  # base64 for 'admin'
+  password: cGFzc3dvcmQ=  # base64 for 'password'
