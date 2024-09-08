@@ -23,7 +23,7 @@ spec:
         volumeMounts:
         - mountPath: /opt/couchdb/data
           name: couchdb-data
-        - mountPath: /opt/couchdb/etc/local.d/docker.ini
+        - mountPath: /opt/couchdb/data/docker.ini
           subPath: docker.ini
           name: couchdb-config
         env:
@@ -37,6 +37,8 @@ spec:
             secretKeyRef:
               name: couchdb-secret
               key: password
+        - name: COUCHDB_EXTRA_CONFIG_FILE
+          value: /opt/couchdb/data/docker.ini  # Pointing CouchDB to use custom config
       volumes:
       - name: couchdb-data
         persistentVolumeClaim:
