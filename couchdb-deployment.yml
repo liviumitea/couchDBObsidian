@@ -18,12 +18,13 @@ spec:
       initContainers:
       - name: init-config
         image: busybox
-        command: ['sh', '-c', 'echo "Starting Init Container"; ls -l /config; ls -l /opt/couchdb/etc; cat /config/custom.ini >> /opt/couchdb/etc/local.ini']
+        command: ['sh', '-c', 'cat /config/custom.ini >> /opt/couchdb/etc/local.ini']
         volumeMounts:
         - mountPath: /config/custom.ini
           subPath: custom.ini
           name: couchdb-config
         - mountPath: /opt/couchdb/etc/local.ini
+          subPath: local.ini  # This ensures local.ini is mounted as a file
           name: couchdb-local-ini
       containers:
       - name: couchdb
@@ -34,24 +35,10 @@ spec:
         - mountPath: /opt/couchdb/data
           name: couchdb-data
         - mountPath: /opt/couchdb/etc/local.ini
+          subPath: local.ini  # Again, ensure local.ini is a file
           name: couchdb-local-ini
         env:
         - name: COUCHDB_USER
           valueFrom:
             secretKeyRef:
-              name: couchdb-secret
-              key: username
-        - name: COUCHDB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: couchdb-secret
-              key: password
-      volumes:
-      - name: couchdb-data
-        persistentVolumeClaim:
-          claimName: couchdb-pvc
-      - name: couchdb-config
-        configMap:
-          name: couchdb-config
-      - name: couchdb-local-ini
-        emptyDir: {}
+              name: couchd
