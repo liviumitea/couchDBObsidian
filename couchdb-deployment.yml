@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: couchdbObsidian
+  name: couchdbobsidian
   namespace: couchdb
   labels:
     app: couchdb
@@ -45,8 +45,8 @@ kind: Service
 metadata:
   name: couchdb-service
 spec:
-  type: ClusterIP
-  clusterIP: 172.16.23.35
+  type: LoadBalancer
+  LoadBalancerIP: 172.16.23.35
   ports:
     - port: 5984
       targetPort: 5984
