@@ -5,7 +5,7 @@ metadata:
   labels:
     app: couchdb
 data:
-  local.ini: |
+  custom-local.ini: |
     [couchdb]
     single_node=true
     max_document_size = 50000000
@@ -29,7 +29,6 @@ data:
     headers = accept, authorization, content-type, origin, referer
     methods = GET,PUT,POST,HEAD,DELETE
     max_age = 3600
----
 
 ---
 apiVersion: apps/v1
@@ -49,6 +48,16 @@ spec:
       labels:
         app: couchdb
     spec:
+      initContainers:
+      - name: init-config
+        image: busybox
+        command: ['sh', '-c', 'cat /config/custom-local.ini >> /opt/couchdb/etc/local.ini']
+        volumeMounts:
+        - mountPath: /config
+          name: couchdb-config
+        - mountPath: /opt/couchdb/etc/local.ini
+          name: couchdb-local-ini
+          subPath: local.ini
       containers:
       - name: couchdb
         image: couchdb
@@ -59,7 +68,7 @@ spec:
           name: couchdb-data
         - mountPath: /opt/couchdb/etc/local.ini
           subPath: local.ini
-          name: couchdb-config
+          name: couchdb-local-ini
         env:
         - name: COUCHDB_USER
           valueFrom:
@@ -78,6 +87,8 @@ spec:
       - name: couchdb-config
         configMap:
           name: couchdb-config
+      - name: couchdb-local-ini
+        emptyDir: {}
 
 ---
 apiVersion: v1
